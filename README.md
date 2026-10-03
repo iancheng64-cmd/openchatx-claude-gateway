@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/iancheng64-cmd/openchatx-claude-gateway/main/docs/banner.png" alt="OpenChatX Claude Gateway" width="80%" onerror="this.style.display='none'"/>
+  <img src="docs/banner.png" alt="OpenChatX Claude Gateway" width="100%"/>
 </p>
 
 <p align="center">
