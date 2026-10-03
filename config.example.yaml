@@ -1,0 +1,50 @@
+# OpenChatX Claude Gateway Configuration
+# Values support environment variable expansion: ${VAR} or ${VAR:-default}
+
+server:
+  # Public HTTPS URL of the gateway as reached by Anthropic's Claude servers.
+  # Example with Tailscale Funnel: https://your-machine-name.your-tailnet.ts.net
+  # Example with Cloudflare Tunnel: https://your-subdomain.trycloudflare.com
+  public_url: https://your-tunnel-url.example.com
+  host: 127.0.0.1
+  port: 8765
+  trusted_proxy_ips: 127.0.0.1
+
+auth:
+  # Encryption key used to protect registered OAuth client credentials and tokens.
+  # Generated automatically by scripts/setup.sh, or set via MCP_GATEWAY_ENCRYPTION_KEY.
+  encryption_key: ${MCP_GATEWAY_ENCRYPTION_KEY:-}
+
+  # Local users allowed to approve OAuth authorization requests.
+  # Generate a bcrypt password hash using: python3 scripts/hash_password.py
+  users:
+    - username: openchatx
+      password_hash: "$2b$12$5BqOSm8a9DHyejlFZW9Pv.iBFvF.GEUVw6wtjCtuYRusmT.mLNH7e"
+      # Default credentials generated above:
+      # Username: openchatx
+      # Password: openchatx
+      # To set a plaintext password for testing:
+      # password: your-password-here
+
+  # Lifetimes (seconds)
+  access_token_expiry_seconds: 3600
+  refresh_token_expiry_seconds: 2592000   # 30 days
+  login_session_expiry_seconds: 28800     # 8 hours
+
+  # Allowed OAuth redirect URIs (Claude Web and Mobile App callbacks)
+  allowed_client_redirect_uris:
+    - "https://claude.ai/api/mcp/auth_callback"
+    - "https://claude.com/api/mcp/auth_callback"
+    - "http://localhost:*/callback"
+    - "http://127.0.0.1:*/callback"
+
+storage:
+  path: ./gateway.db
+
+backends:
+  # Local OpenChatX Core Runtime
+  # OpenChatX desktop app serves its MCP endpoint on port 8001 by default.
+  openchatx:
+    url: http://127.0.0.1:8001/mcp
+    auth:
+      type: none
