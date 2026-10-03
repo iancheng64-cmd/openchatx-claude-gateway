@@ -1,6 +1,10 @@
 # 🌐 OpenChatX Claude Gateway
 
 <p align="center">
+  <b>繁體中文</b> | <a href="README_EN.md">English</a> | <a href="https://iancheng64-cmd.github.io/openchatx-claude-gateway/">🌐 網頁展示 (GitHub Pages)</a>
+</p>
+
+<p align="center">
   <img src="https://raw.githubusercontent.com/iancheng64-cmd/openchatx-claude-gateway/main/docs/banner.png" alt="OpenChatX Claude Gateway" width="80%" onerror="this.style.display='none'"/>
 </p>
 
@@ -145,7 +149,11 @@ bash scripts/tunnel-cloudflare.sh
 6. **OAuth 授權彈窗**：
    * 頁面會開啟閘道的登入畫面，輸入你在設定時建立的帳號密碼（預設為 `openchatx` / `openchatx`）。
    * 登入後點擊 **Approve**。
-7. **完成**！回到 Connectors 列表，即可看到 **OpenChatX** 顯示為綠色的 **Connected**！
+7. **完成**！回到 Connectors 列表，即可看到 **OpenChatX** 顯示為綠色的 **Connected**（如下圖實測截圖所示）！
+
+<p align="center">
+  <img src="docs/images/claude-connectors-openchatx.png" alt="Claude Connectors OpenChatX Connected" width="90%"/>
+</p>
 
 ---
 

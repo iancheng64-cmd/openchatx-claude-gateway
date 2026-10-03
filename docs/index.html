@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="scroll-smooth dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenChatX Claude Gateway — Connect OpenChatX to Claude Web & Mobile</title>
+  <meta name="description" content="Connect your local OpenChatX Agent Runtime to Anthropic Claude (Web & Mobile) via spec-compliant OAuth 2.1 Remote MCP." />
+  <meta property="og:title" content="OpenChatX Claude Gateway" />
+  <meta property="og:description" content="Connect your local OpenChatX Agent Runtime to Anthropic Claude via OAuth 2.1 Remote MCP." />
+  <meta property="og:image" content="images/claude-connectors-openchatx.png" />
+  <meta property="og:type" content="website" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+            },
+            claude: '#d97706',
+            openchatx: '#3b82f6',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.05); }
+    }
+    .glow-bg {
+      animation: pulseGlow 8s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-purple-500 selection:text-white antialiased font-sans">
+
+  <!-- Glow Background Effect -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-tr from-purple-700/20 via-indigo-600/20 to-amber-500/15 blur-[120px] rounded-full glow-bg"></div>
+    <div class="absolute top-1/2 -left-40 w-[400px] h-[400px] bg-blue-600/10 blur-[100px] rounded-full"></div>
+  </div>
+
+  <!-- Navbar -->
+  <header class="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <span class="text-2xl">🌐</span>
+        <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-purple-400 via-indigo-300 to-amber-300 bg-clip-text text-transparent">
+          OpenChatX Claude Gateway
+        </span>
+        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-900/60 text-purple-300 border border-purple-700/50">
+          v1.0.0
+        </span>
+      </div>
+
+      <nav class="flex items-center space-x-4 text-sm font-medium">
+        <a href="#screenshot" class="text-slate-300 hover:text-white transition">連線展示</a>
+        <a href="#features" class="text-slate-300 hover:text-white transition">特色</a>
+        <a href="#quickstart" class="text-slate-300 hover:text-white transition">快速上手</a>
+        <a href="#tools" class="text-slate-300 hover:text-white transition">26 項工具</a>
+
+        <!-- Language toggle button -->
+        <button id="langToggle" onclick="toggleLanguage()" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition flex items-center space-x-1">
+          <span id="langLabel">English</span>
+        </button>
+
+        <a href="https://github.com/iancheng64-cmd/openchatx-claude-gateway" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white transition shadow-sm">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>GitHub</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12 text-center">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 mb-6">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+      <span data-i18n="badge-connected">實測通過：Claude Web Connectors 成功連線 OpenChatX</span>
+    </div>
+
+    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-100 leading-tight">
+      <span data-i18n="hero-title-1">讓 Claude 免費版與付費版</span><br />
+      <span class="bg-gradient-to-r from-purple-400 via-indigo-400 to-amber-400 bg-clip-text text-transparent" data-i18n="hero-title-2">
+        化身為真正掌控本機電腦的 Agent
+      </span>
+    </h1>
+
+    <p class="mt-6 text-lg sm:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed" data-i18n="hero-desc">
+      無需修改 OpenChatX App 本體。透過標準 OAuth 2.1 Remote MCP 規範，將 Claude 網頁版、桌面版或手機 App 與本機 OpenChatX Core Runtime 完美對接，解鎖 26 項本機工具。
+    </p>
+
+    <!-- Badges -->
+    <div class="mt-6 flex flex-wrap justify-center gap-2">
+      <span class="px-2.5 py-1 text-xs font-medium rounded-md bg-blue-900/40 text-blue-300 border border-blue-800/60">OpenChatX v1.0.0-beta.1</span>
+      <span class="px-2.5 py-1 text-xs font-medium rounded-md bg-emerald-900/40 text-emerald-300 border border-emerald-800/60">OAuth 2.1 (DCR + PKCE)</span>
+      <span class="px-2.5 py-1 text-xs font-medium rounded-md bg-purple-900/40 text-purple-300 border border-purple-800/60">Claude Custom Connectors</span>
+      <span class="px-2.5 py-1 text-xs font-medium rounded-md bg-amber-900/40 text-amber-300 border border-amber-800/60">26 Native Agent Tools</span>
+      <span class="px-2.5 py-1 text-xs font-medium rounded-md bg-slate-800 text-slate-300 border border-slate-700">MIT Licensed</span>
+    </div>
+
+    <!-- CTA buttons -->
+    <div class="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+      <a href="#quickstart" class="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-purple-950/50 transition">
+        🚀 <span data-i18n="cta-start">3 分鐘快速上手</span>
+      </a>
+      <a href="https://github.com/iancheng64-cmd/openchatx-claude-gateway" target="_blank" class="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold border border-slate-700 transition">
+        ⭐ <span data-i18n="cta-star">GitHub 開源專案</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- SCREENSHOT SHOWCASE SECTION (THE USER'S UPLOADED IMAGE) -->
+  <section id="screenshot" class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="relative rounded-2xl p-1 bg-gradient-to-b from-slate-700/60 via-slate-800/40 to-slate-900/80 shadow-2xl shadow-purple-950/40">
+      
+      <!-- Window Titlebar Mockup -->
+      <div class="flex items-center justify-between px-4 py-3 bg-slate-900/90 rounded-t-xl border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+          <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+          <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+          <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+          <span class="ml-2 text-xs font-medium text-slate-400">Claude.ai — Settings > Connectors > Yours</span>
+        </div>
+        <div class="flex items-center space-x-2 text-xs text-emerald-400 font-semibold bg-emerald-950/70 border border-emerald-800/60 px-2.5 py-0.5 rounded-full">
+          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+          <span>OpenChatX Connected (Web Custom)</span>
+        </div>
+      </div>
+
+      <!-- Screenshot Image Container -->
+      <div class="overflow-hidden rounded-b-xl bg-slate-900 border border-slate-800">
+        <img 
+          src="images/claude-connectors-openchatx.png" 
+          alt="Claude Settings Connectors showing OpenChatX connected successfully" 
+          class="w-full h-auto object-cover hover:scale-[1.01] transition-transform duration-300"
+          loading="eager"
+        />
+      </div>
+    </div>
+
+    <!-- Caption description -->
+    <div class="mt-4 text-center text-sm text-slate-400">
+      <span class="font-semibold text-slate-300">真實連線認證：</span>
+      在 Claude 網頁端 Settings ➔ Connectors 成功掛載 OpenChatX，狀態顯示為打勾確認，即時獲得 26 項本機操作工具！
+    </div>
+  </section>
+
+  <!-- Key Highlights Grid -->
+  <section id="features" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div class="text-center mb-12">
+      <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-100" data-i18n="feat-title">
+        為什麼選擇 OpenChatX Claude Gateway？
+      </h2>
+      <p class="mt-2 text-slate-400" data-i18n="feat-subtitle">
+        為追求本機自主性的 Claude 使用者量身打造的高效橋接器
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      
+      <!-- Feature 1 -->
+      <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-purple-600/50 transition group">
+        <div class="w-12 h-12 rounded-xl bg-purple-900/30 text-purple-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition">
+          🛡️
+        </div>
+        <h3 class="text-lg font-semibold text-slate-200 mb-2" data-i18n="feat-1-title">零侵入性 (Zero Touch)</h3>
+        <p class="text-sm text-slate-400 leading-relaxed" data-i18n="feat-1-desc">
+          完全無需改動官方 OpenChatX.app 二進位檔或重新打包 DMG。直接搭配原生 OpenChatX 執行，升級無痛。
+        </p>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-indigo-600/50 transition group">
+        <div class="w-12 h-12 rounded-xl bg-indigo-900/30 text-indigo-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition">
+          🔄
+        </div>
+        <h3 class="text-lg font-semibold text-slate-200 mb-2" data-i18n="feat-2-title">雙平台同時在線 (Dual-Provider)</h3>
+        <p class="text-sm text-slate-400 leading-relaxed" data-i18n="feat-2-desc">
+          ChatGPT 與 Claude 可同時連入同一套 OpenChatX Runtime，共享本機記憶、自訂 Skills 與工作區狀態。
+        </p>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-emerald-600/50 transition group">
+        <div class="w-12 h-12 rounded-xl bg-emerald-900/30 text-emerald-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition">
+          🔐
+        </div>
+        <h3 class="text-lg font-semibold text-slate-200 mb-2" data-i18n="feat-3-title">完整 OAuth 2.1 規範相容</h3>
+        <p class="text-sm text-slate-400 leading-relaxed" data-i18n="feat-3-desc">
+          原生支援 RFC 7591 動態客戶端註冊 (DCR)、PKCE S256 授權碼防偽與 Fernet AES-256 加密保存。
+        </p>
+      </div>
+
+      <!-- Feature 4 -->
+      <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-amber-600/50 transition group">
+        <div class="w-12 h-12 rounded-xl bg-amber-900/30 text-amber-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition">
+          💻
+        </div>
+        <h3 class="text-lg font-semibold text-slate-200 mb-2" data-i18n="feat-4-title">解鎖 26 項 Agent 核心工具</h3>
+        <p class="text-sm text-slate-400 leading-relaxed" data-i18n="feat-4-desc">
+          包含檔案讀寫、局部代碼編輯、終端 Shell 命令執行、長進程監控、專案 Goals 管理與子代理運作。
+        </p>
+      </div>
+
+      <!-- Feature 5 -->
+      <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-blue-600/50 transition group">
+        <div class="w-12 h-12 rounded-xl bg-blue-900/30 text-blue-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition">
+          🚀
+        </div>
+        <h3 class="text-lg font-semibold text-slate-200 mb-2" data-i18n="feat-5-title">macOS 開機常駐 (LaunchAgent)</h3>
+        <p class="text-sm text-slate-400 leading-relaxed" data-i18n="feat-5-desc">
+          內建 launchd 服務腳本，開機在背景靜默守護，不佔用終端視窗，掛載隨開隨用。
+        </p>
+      </div>
+
+      <!-- Feature 6 -->
+      <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-rose-600/50 transition group">
+        <div class="w-12 h-12 rounded-xl bg-rose-900/30 text-rose-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition">
+          🌐
+        </div>
+        <h3 class="text-lg font-semibold text-slate-200 mb-2" data-i18n="feat-6-title">免固定 IP 穿透 (Tailscale/Cloudflare)</h3>
+        <p class="text-sm text-slate-400 leading-relaxed" data-i18n="feat-6-desc">
+          一鍵使用 Tailscale Funnel 固定免費域名或 Cloudflare Quick Tunnel，無需公網固定 IP 或手動設定路由器。
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Quick Start Section -->
+  <section id="quickstart" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold tracking-tight text-slate-100" data-i18n="qs-title">
+        3 步驟快速開始
+      </h2>
+      <p class="mt-2 text-slate-400" data-i18n="qs-subtitle">
+        僅需幾行指令即可完成配置並開始與 Claude 對話
+      </p>
+    </div>
+
+    <div class="space-y-6">
+      
+      <!-- Step 1 -->
+      <div class="p-6 rounded-xl bg-slate-900 border border-slate-800">
+        <div class="flex items-center space-x-3 mb-3">
+          <span class="w-7 h-7 rounded-full bg-purple-600 text-white font-bold flex items-center justify-center text-sm">1</span>
+          <h3 class="font-semibold text-slate-200" data-i18n="qs-step1-title">確保 OpenChatX App 正在運作</h3>
+        </div>
+        <p class="text-sm text-slate-400 mb-3" data-i18n="qs-step1-desc">
+          確認官方 OpenChatX.app 已經啟動，預設會在 <code class="text-purple-300">127.0.0.1:8001</code> 提供 MCP 接口。
+        </p>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="p-6 rounded-xl bg-slate-900 border border-slate-800">
+        <div class="flex items-center space-x-3 mb-3">
+          <span class="w-7 h-7 rounded-full bg-purple-600 text-white font-bold flex items-center justify-center text-sm">2</span>
+          <h3 class="font-semibold text-slate-200" data-i18n="qs-step2-title">Clone 專案並執行自動安裝精靈</h3>
+        </div>
+        <div class="relative bg-slate-950 p-4 rounded-lg font-mono text-sm text-slate-300 border border-slate-800 overflow-x-auto">
+          <code>git clone https://github.com/iancheng64-cmd/openchatx-claude-gateway.git<br>cd openchatx-claude-gateway<br>bash scripts/setup.sh</code>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">
+          腳本會自動建立 venv、生成資料庫金鑰、設定預設憑證 (<code class="text-slate-400">openchatx</code> / <code class="text-slate-400">openchatx</code>) 並綁定穿透。
+        </p>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="p-6 rounded-xl bg-slate-900 border border-slate-800">
+        <div class="flex items-center space-x-3 mb-3">
+          <span class="w-7 h-7 rounded-full bg-purple-600 text-white font-bold flex items-center justify-center text-sm">3</span>
+          <h3 class="font-semibold text-slate-200" data-i18n="qs-step3-title">在 Claude 中新增 OpenChatX 連接器</h3>
+        </div>
+        <ol class="list-decimal list-inside text-sm text-slate-300 space-y-2 leading-relaxed">
+          <li>登入 <a href="https://claude.ai" target="_blank" class="text-purple-400 hover:underline">claude.ai</a> ➔ 點擊左下角頭像 ➔ <b>Settings</b> ➔ <b>Connectors</b> ➔ <b>Yours</b>。</li>
+          <li>點選右上角 <b>Add</b> ➔ 選擇 <b>Add custom connector</b>。</li>
+          <li><b>Step 1</b>：Name 填 <code class="text-purple-300">OpenChatX</code>，URL 填你的穿透網址加上 <code class="text-purple-300">/mcp</code>（例：<code class="text-slate-400">https://your-domain.ts.net/mcp</code>）。</li>
+          <li><b>Step 2</b>：驗證選擇 <b>Sign in now</b>，OAuth Client 務必選擇 <b>Register automatically (DCR)</b>。</li>
+          <li>在跳出的網頁授權視窗中輸入帳號密碼登入並點擊 <b>Approve</b>，即完成連線！</li>
+        </ol>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 26 Tools Explorer Section -->
+  <section id="tools" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div class="text-center mb-10">
+      <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-100" data-i18n="tools-title">
+        26 項 Agent 專用本機工具清單
+      </h2>
+      <p class="mt-2 text-slate-400" data-i18n="tools-desc">
+        連線成功後，Claude 可根據任務意圖自動調度以下工具
+      </p>
+    </div>
+
+    <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/50">
+      <table class="w-full text-left text-sm text-slate-300">
+        <thead class="bg-slate-800/80 text-xs uppercase text-slate-400 font-semibold border-b border-slate-800">
+          <tr>
+            <th class="px-6 py-4">分類</th>
+            <th class="px-6 py-4">工具名稱 (Tool ID)</th>
+            <th class="px-6 py-4">功能說明</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/60 font-mono text-xs">
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-purple-400 font-medium">檔案操作</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_file_read</td>
+            <td class="px-6 py-3 font-sans text-slate-400">讀取本機檔案內容（支援文字與代碼）</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-purple-400 font-medium">檔案操作</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_file_write</td>
+            <td class="px-6 py-3 font-sans text-slate-400">新增檔案或完整覆寫檔案內容</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-purple-400 font-medium">檔案操作</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_file_edit</td>
+            <td class="px-6 py-3 font-sans text-slate-400">外科手術式精確局部修改代碼或設定檔</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-purple-400 font-medium">檔案操作</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_apply_patch</td>
+            <td class="px-6 py-3 font-sans text-slate-400">套用跨多檔案的 unified diff 補丁</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-blue-400 font-medium">檔案搜尋</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_glob</td>
+            <td class="px-6 py-3 font-sans text-slate-400">根據萬用字元 pattern 搜尋檔名與目錄結構</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-blue-400 font-medium">檔案搜尋</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_grep</td>
+            <td class="px-6 py-3 font-sans text-slate-400">全專案正則表達式快速搜尋文字內容</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-blue-400 font-medium">檔案搜尋</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_image_view</td>
+            <td class="px-6 py-3 font-sans text-slate-400">檢視本機圖片或系統截圖資源</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-amber-400 font-medium">終端執行</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_bash</td>
+            <td class="px-6 py-3 font-sans text-slate-400">在本地終端機中安全執行 Shell 指令</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-amber-400 font-medium">終端執行</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_bash_process</td>
+            <td class="px-6 py-3 font-sans text-slate-400">監控、互動與管理長時間執行的後台進程</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-amber-400 font-medium">終端執行</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_terminal</td>
+            <td class="px-6 py-3 font-sans text-slate-400">互動式虛擬終端與 REPL 連線控制</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-emerald-400 font-medium">技能擴充</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_skill_search</td>
+            <td class="px-6 py-3 font-sans text-slate-400">搜尋 OpenChatX 內建與自訂 Skills</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-emerald-400 font-medium">技能擴充</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_skill_manage</td>
+            <td class="px-6 py-3 font-sans text-slate-400">新增、編輯或維護 Skill 工作流</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-emerald-400 font-medium">技能擴充</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_capability_list</td>
+            <td class="px-6 py-3 font-sans text-slate-400">檢視目前已啟用的能力與擴充模組</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-indigo-400 font-medium">工作區</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_project_manage</td>
+            <td class="px-6 py-3 font-sans text-slate-400">設定與切換當前作用中的專案根目錄</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-indigo-400 font-medium">工作區</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_goal_list</td>
+            <td class="px-6 py-3 font-sans text-slate-400">檢視當前工作區尚未完成的 Goals 目標</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-indigo-400 font-medium">工作區</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_goal_manage</td>
+            <td class="px-6 py-3 font-sans text-slate-400">新增、更新或標記任務目標達成狀態</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-indigo-400 font-medium">工作區</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_rule_resolve</td>
+            <td class="px-6 py-3 font-sans text-slate-400">解析與載入適用於當前任務的行為約束 Rules</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-indigo-400 font-medium">工作區</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_rule_manage</td>
+            <td class="px-6 py-3 font-sans text-slate-400">管理工作區自訂約束規則</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-rose-400 font-medium">進階調度</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_subagent_list</td>
+            <td class="px-6 py-3 font-sans text-slate-400">列出可調用的專屬子代理模型清單</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-rose-400 font-medium">進階調度</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_subagent_run</td>
+            <td class="px-6 py-3 font-sans text-slate-400">啟動獨立子代理執行特定分支任務</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-rose-400 font-medium">進階調度</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_summarize</td>
+            <td class="px-6 py-3 font-sans text-slate-400">提取會話核心脈絡，進行跨對話記憶交接</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-rose-400 font-medium">進階調度</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_tool_search</td>
+            <td class="px-6 py-3 font-sans text-slate-400">動態檢索並懶載入本機與擴充工具庫</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-rose-400 font-medium">進階調度</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_tool_call</td>
+            <td class="px-6 py-3 font-sans text-slate-400">呼叫動態掛載的內部工具</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-rose-400 font-medium">進階調度</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_fetch_url</td>
+            <td class="px-6 py-3 font-sans text-slate-400">抓取外部網頁內容並轉為乾淨 Markdown</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-rose-400 font-medium">進階調度</td>
+            <td class="px-6 py-3 text-slate-200">openchatx_start_here</td>
+            <td class="px-6 py-3 font-sans text-slate-400">每次新對話開始時自動對齊環境上下文</td>
+          </tr>
+          <tr class="hover:bg-slate-800/30">
+            <td class="px-6 py-3 font-sans text-slate-400 font-medium">系統診斷</td>
+            <td class="px-6 py-3 text-slate-200">gateway_status</td>
+            <td class="px-6 py-3 font-sans text-slate-400">查詢閘道即時運作狀態與健康度指標</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-slate-950 py-10 text-center text-sm text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+      <div class="flex items-center justify-center space-x-6 text-slate-400">
+        <a href="https://github.com/iancheng64-cmd/openchatx-claude-gateway" target="_blank" class="hover:text-white transition">GitHub Repo</a>
+        <a href="https://github.com/iancheng64-cmd/openchatx-claude-gateway/blob/main/README.md" target="_blank" class="hover:text-white transition">中文文檔</a>
+        <a href="https://github.com/iancheng64-cmd/openchatx-claude-gateway/blob/main/README_EN.md" target="_blank" class="hover:text-white transition">English Docs</a>
+        <a href="https://github.com/XiaoPuOuO/OpenChatX" target="_blank" class="hover:text-white transition">OpenChatX App</a>
+      </div>
+      <p>
+        Released under the MIT License. Original OpenChatX App is copyright &copy; XiaoPuOuO.
+      </p>
+    </div>
+  </footer>
+
+  <!-- Simple Bilingual Toggle Script -->
+  <script>
+    let currentLang = 'zh';
+    const translations = {
+      zh: {
+        'badge-connected': '實測通過：Claude Web Connectors 成功連線 OpenChatX',
+        'hero-title-1': '讓 Claude 免費版與付費版',
+        'hero-title-2': '化身為真正掌控本機電腦的 Agent',
+        'hero-desc': '無需修改 OpenChatX App 本體。透過標準 OAuth 2.1 Remote MCP 規範，將 Claude 網頁版、桌面版或手機 App 與本機 OpenChatX Core Runtime 完美對接，解鎖 26 項本機工具。',
+        'cta-start': '3 分鐘快速上手',
+        'cta-star': 'GitHub 開源專案',
+        'feat-title': '為什麼選擇 OpenChatX Claude Gateway？',
+        'feat-subtitle': '為追求本機自主性的 Claude 使用者量身打造的高效橋接器',
+        'feat-1-title': '零侵入性 (Zero Touch)',
+        'feat-1-desc': '完全無需改動官方 OpenChatX.app 二進位檔或重新打包 DMG。直接搭配原生 OpenChatX 執行，升級無痛。',
+        'feat-2-title': '雙平台同時在線 (Dual-Provider)',
+        'feat-2-desc': 'ChatGPT 與 Claude 可同時連入同一套 OpenChatX Runtime，共享本機記憶、自訂 Skills 與工作區狀態。',
+        'feat-3-title': '完整 OAuth 2.1 規範相容',
+        'feat-3-desc': '原生支援 RFC 7591 動態客戶端註冊 (DCR)、PKCE S256 授權碼防偽與 Fernet AES-256 加密保存。',
+        'feat-4-title': '解鎖 26 項 Agent 核心工具',
+        'feat-4-desc': '包含檔案讀寫、局部代碼編輯、終端 Shell 命令執行、長進程監控、專案 Goals 管理與子代理運作。',
+        'feat-5-title': 'macOS 開機常駐 (LaunchAgent)',
+        'feat-5-desc': '內建 launchd 服務腳本，開機在背景靜默守護，不佔用終端視窗，掛載隨開隨用。',
+        'feat-6-title': '免固定 IP 穿透 (Tailscale/Cloudflare)',
+        'feat-6-desc': '一鍵使用 Tailscale Funnel 固定免費域名或 Cloudflare Quick Tunnel，無需公網固定 IP 或手動設定路由器。',
+        'qs-title': '3 步驟快速開始',
+        'qs-subtitle': '僅需幾行指令即可完成配置並開始與 Claude 對話',
+        'qs-step1-title': '確保 OpenChatX App 正在運作',
+        'qs-step1-desc': '確認官方 OpenChatX.app 已經啟動，預設會在 127.0.0.1:8001 提供 MCP 接口。',
+        'qs-step2-title': 'Clone 專案並執行自動安裝精靈',
+        'qs-step3-title': '在 Claude 中新增 OpenChatX 連接器',
+        'tools-title': '26 項 Agent 專用本機工具清單',
+        'tools-desc': '連線成功後，Claude 可根據任務意圖自動調度以下工具'
+      },
+      en: {
+        'badge-connected': 'Verified: OpenChatX Connected to Claude Web Connectors',
+        'hero-title-1': 'Turn Claude Free & Paid Accounts',
+        'hero-title-2': 'Into a True Autonomous Local Machine Agent',
+        'hero-desc': 'Zero modifications to OpenChatX.app required. Connect Claude Web, Desktop, and Mobile Apps to your local OpenChatX Core Runtime via RFC-compliant OAuth 2.1 Remote MCP and unlock 26 native tools.',
+        'cta-start': 'Quick Start in 3 Min',
+        'cta-star': 'View on GitHub',
+        'feat-title': 'Why OpenChatX Claude Gateway?',
+        'feat-subtitle': 'Built for Claude users who demand genuine local machine autonomy',
+        'feat-1-title': 'Zero-Touch Integration',
+        'feat-1-desc': 'Zero patching or modifying the official OpenChatX.app binary. No DMG rebuilding required. Painless updates.',
+        'feat-2-title': 'Dual-Provider Coexistence',
+        'feat-2-desc': 'ChatGPT and Claude can connect simultaneously to the exact same OpenChatX runtime, sharing tools, skills, and memory.',
+        'feat-3-title': 'Spec-Compliant OAuth 2.1',
+        'feat-3-desc': 'Full implementation of RFC 7591 Dynamic Client Registration (DCR), PKCE S256 code verifier, and Fernet AES-256 encryption.',
+        'feat-4-title': '26 Native Agent Tools',
+        'feat-4-desc': 'Full file I/O, surgical code editing, shell execution, long-running processes, workspace goals, and subagent orchestration.',
+        'feat-5-title': 'macOS Background Daemon',
+        'feat-5-desc': 'Includes LaunchAgent template to launch automatically upon login without cluttering your active terminal windows.',
+        'feat-6-title': 'Effortless Ingress (Tailscale / Cloudflare)',
+        'feat-6-desc': 'One-click setup with Tailscale Funnel or Cloudflare Quick Tunnel. No public static IP or router port forwarding needed.',
+        'qs-title': 'Quick Start in 3 Steps',
+        'qs-subtitle': 'Get up and running in minutes with just a few terminal commands',
+        'qs-step1-title': 'Ensure OpenChatX App is Running',
+        'qs-step1-desc': 'Make sure the official OpenChatX.app is open, serving MCP at 127.0.0.1:8001 by default.',
+        'qs-step2-title': 'Clone Repository & Run Setup Wizard',
+        'qs-step3-title': 'Add OpenChatX Connector in Claude Settings',
+        'tools-title': 'Complete 26 Local Agent Tools',
+        'tools-desc': 'Once connected, Claude automatically orchestrates these tools based on conversation context'
+      }
+    };
+
+    function toggleLanguage() {
+      currentLang = currentLang === 'zh' ? 'en' : 'zh';
+      document.getElementById('langLabel').textContent = currentLang === 'zh' ? 'English' : '繁體中文';
+      const map = translations[currentLang];
+      for (const [key, value] of Object.entries(map)) {
+        const el = document.querySelector(`[data-i18n="${key}"]`);
+        if (el) el.textContent = value;
+      }
+    }
+  </script>
+</body>
+</html>
